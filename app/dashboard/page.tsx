@@ -16,7 +16,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Zap } from "lucide-react"
 
 const backtestSchema = z.object({
-  prompt: z.string().min(10, { message: "Please enter a detailed investment idea" }),
+  name: z.string().min(1, { message: "Please enter a backtest name" }),
+  prompt: z.string().min(10, { message: "Please enter a detailed trading strategy description" }),
   tickers: z.array(z.string()).min(1, { message: "Please select at least one ticker" }),
   startDate: z.date(),
   endDate: z.date(),
@@ -53,12 +54,13 @@ export default function DashboardPage() {
   } = useForm<BacktestFormValues>({
     resolver: zodResolver(backtestSchema),
     defaultValues: {
+      name: "",
       prompt: "",
       tickers: [],
       startDate: new Date(2020, 0, 1),
       endDate: new Date(),
       initialCapital: 10000,
-      commission: 0.1,
+      commission: 0.12,
     },
   })
 
@@ -91,8 +93,8 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Backtest Parameters</CardTitle>
-          <CardDescription>Enter your investment idea and parameters</CardDescription>
+          <CardTitle>Create a New Backtest</CardTitle>
+          <CardDescription>Enter your trading idea, select assets, and specify parameters to run a backtest</CardDescription>
         </CardHeader>
         <CardContent>
           <form id="backtest-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -105,10 +107,20 @@ export default function DashboardPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="prompt">Investment Idea</Label>
+              <Label htmlFor="name">Backtest Name</Label>
+              <Input
+                id="name"
+                placeholder="Enter a name for your backtest..."
+                {...register("name")}
+              />
+              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="prompt">Trading Strategy Description</Label>
               <Textarea
                 id="prompt"
-                placeholder="Describe your investment idea in detail. For example: Buy stocks with positive momentum and hold for 30 days..."
+                placeholder="Describe your trading strategy in detail. For example: Buy stocks with positive momentum and hold for 30 days..."
                 className="min-h-[100px]"
                 {...register("prompt")}
               />
@@ -148,7 +160,7 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="initialCapital">Initial Capital ($)</Label>
+                <Label htmlFor="initialCapital">Initial Capital (₹)</Label>
                 <Input id="initialCapital" type="number" {...register("initialCapital")} />
                 {errors.initialCapital && <p className="text-sm text-red-500">{errors.initialCapital.message}</p>}
               </div>
@@ -238,10 +250,10 @@ function generateMockBacktestResults(data: BacktestFormValues) {
   const sharpeRatio = (avgDailyReturn / stdDailyReturn) * Math.sqrt(252) // Annualized
 
   // Generate monthly returns
-  const monthlyReturns = []
-  let currentMonth = startDate.getMonth()
-  let currentYear = startDate.getFullYear()
-  let monthStartEquity = initialCapital
+  const monthlyReturns: Array<{month: string; return: number}> = [];
+  let currentMonth = startDate.getMonth();
+  let currentYear = startDate.getFullYear();
+  let monthStartEquity = initialCapital;
 
   equityCurve.forEach((point, index) => {
     const date = new Date(point.date)

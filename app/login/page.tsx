@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -24,8 +25,12 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const [error, setError] = useState<string | null>(searchParams.get("error") || null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [forgotPassword, setForgotPassword] = useState<boolean>(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState<string>("")
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<string | null>(null)
 
   const {
     register,
@@ -40,20 +45,73 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      // In a real app, you would make an API call to authenticate the user
-      // For demo purposes, we'll simulate a successful login with a delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+      })
 
-      // Mock credentials for demo
-      if (data.email === "demo@example.com" && data.password === "password") {
-        // Store some user info in localStorage for demo purposes
-        localStorage.setItem("user", JSON.stringify({ email: data.email }))
-        router.push("/dashboard")
+      if (result?.error) {
+        setError(result.error)
+        setIsLoading(false)
+        return
+      }
+
+      // Wait a moment for the session to be established
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Fetch the user's role after successful login using our custom endpoint
+      const session = await fetch("/api/auth/custom-session")
+      const sessionData = await session.json()
+      
+      console.log("Session data:", sessionData)
+      
+      // Redirect based on role
+      if (sessionData?.user?.role === "admin") {
+        console.log("Redirecting to admin dashboard")
+        router.push("/admin/dashboard")
       } else {
-        setError("Invalid email or password")
+        console.log("Redirecting to user dashboard")
+        router.push("/dashboard")
       }
     } catch (err) {
       setError("An error occurred. Please try again.")
+      setIsLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail || !forgotPasswordEmail.includes('@')) {
+      setError("Please enter a valid email address")
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    setForgotPasswordMessage(null)
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("No account exists with this email address")
+        } else {
+          throw new Error(data.error || "Something went wrong")
+        }
+      }
+
+      setForgotPasswordMessage("Password reset instructions have been sent to your email")
+    } catch (err: any) {
+      setError(err.message || "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -72,54 +130,110 @@ export default function LoginPage() {
       </div>
       <Card className="w-full max-w-md bg-gray-900 text-white border-gray-800">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            {forgotPassword ? "Reset Password" : "Login"}
+          </CardTitle>
           <CardDescription className="text-gray-400">
-            Enter your email and password to access your account
+            {forgotPassword
+              ? "Enter your email address to receive a password reset link"
+              : "Enter your email and password to access your account"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">
-                Email
-              </Label>
-              <Input
-                id="email"
-                placeholder="name@example.com"
-                {...register("email")}
-                autoComplete="email"
-                className="bg-gray-800 border-gray-700 text-white"
-              />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-white">
-                  Password
+          {!forgotPassword ? (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-white">
+                  Email
                 </Label>
-                <Link href="#" className="text-sm text-yellow-400 hover:underline">
-                  Forgot password?
-                </Link>
+                <Input
+                  id="email"
+                  placeholder="name@example.com"
+                  {...register("email")}
+                  autoComplete="email"
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+                {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
               </div>
-              <Input
-                id="password"
-                type="password"
-                {...register("password")}
-                autoComplete="current-password"
-                className="bg-gray-800 border-gray-700 text-white"
-              />
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-white">
+                    Password
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-yellow-400 hover:underline p-0 h-auto font-normal"
+                    onClick={() => setForgotPassword(true)}
+                  >
+                    Forgot password?
+                  </Button>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  {...register("password")}
+                  autoComplete="current-password"
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+                {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              </div>
+              <Button type="submit" className="w-full bg-yellow-400 text-black hover:bg-yellow-500" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {forgotPasswordMessage && (
+                <Alert className="bg-green-900 border-green-800 text-white">
+                  <AlertDescription>{forgotPasswordMessage}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email" className="text-white">
+                  Email
+                </Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="name@example.com"
+                  className="bg-gray-800 border-gray-700 text-white"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setForgotPassword(false)}
+                >
+                  Back to Login
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 bg-yellow-400 text-black hover:bg-yellow-500"
+                  onClick={handleForgotPassword}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Processing..." : "Reset Password"}
+                </Button>
+              </div>
             </div>
-            <Button type="submit" className="w-full bg-yellow-400 text-black hover:bg-yellow-500" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Login"}
-            </Button>
-          </form>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col">
           <div className="text-sm text-gray-400 mt-2">
@@ -127,11 +241,6 @@ export default function LoginPage() {
             <Link href="/register" className="text-yellow-400 hover:underline">
               Register
             </Link>
-          </div>
-          <div className="text-xs text-gray-500 mt-4">
-            <p>Demo credentials:</p>
-            <p>Email: demo@example.com</p>
-            <p>Password: password</p>
           </div>
         </CardFooter>
       </Card>

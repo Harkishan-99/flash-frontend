@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Zap } from "lucide-react"
 import { PrivacyDialog } from "@/components/privacy-dialog"
 import { TermsDialog } from "@/components/terms-dialog"
+import { CodeAnimation } from "@/components/code-animation"
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white">
-      <header className="px-4 lg:px-6 h-16 flex items-center border-b border-gray-800">
+    <div className="flex flex-col min-h-screen bg-black text-white relative">
+      <CodeAnimation />
+      <header className="px-4 lg:px-6 h-16 flex items-center border-b border-gray-800 relative z-10">
         <Link href="/" className="flex flex-col justify-center">
           <div className="flex items-center">
             <Zap className="h-6 w-6 text-yellow-400 mr-2" />
@@ -29,8 +31,8 @@ export default function Home() {
           </Link>
         </nav>
       </header>
-      <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-black">
+      <main className="flex-1 relative z-10">
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-black bg-opacity-60">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
@@ -83,7 +85,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t border-gray-800">
+      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t border-gray-800 relative z-10">
         <p className="text-xs text-gray-400">© 2025 QuantHive. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <TermsDialog 

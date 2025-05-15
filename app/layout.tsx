@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { SettingsProvider } from "@/contexts/settings-context"
+import { AuthProvider } from "@/contexts/auth-provider"
 import type React from "react"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -21,13 +22,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <SettingsProvider>
-            <TooltipProvider delayDuration={0}>
-              {children}
-            </TooltipProvider>
-          </SettingsProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <SettingsProvider>
+              <TooltipProvider delayDuration={0}>
+                {children}
+              </TooltipProvider>
+            </SettingsProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   )
