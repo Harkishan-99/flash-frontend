@@ -1,9 +1,9 @@
 {
-  "buildCommand": "npm pkg delete devDependencies.eslint-config-next && npm install --legacy-peer-deps && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["bom1"],
-  "installCommand": "npm --version",
+  "installCommand": "npm install --no-audit --no-fund --legacy-peer-deps",
   "headers": [
     {
       "source": "/(.*)",
