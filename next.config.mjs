@@ -6,9 +6,15 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  output: 'standalone',
   images: {
-    unoptimized: true,
+    unoptimized: false,
+    domains: ['api.quanthive.in'],
   },
+  poweredByHeader: false,
+  reactStrictMode: true,
+  compress: true,
+  swcMinify: true,
 }
 
 export default nextConfig
