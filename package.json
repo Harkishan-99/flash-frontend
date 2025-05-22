@@ -45,7 +45,7 @@
     "chart.js": "^4.4.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk": "1.4.1",
+    "cmdk": "^0.2.0",
     "date-fns": "latest",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
@@ -77,5 +77,11 @@
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "typescript": "^5"
+  },
+  "overrides": {
+    "cmdk": "^0.2.0"
+  },
+  "resolutions": {
+    "cmdk": "^0.2.0"
   }
 }
