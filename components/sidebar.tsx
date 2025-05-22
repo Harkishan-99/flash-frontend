@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, BarChart2, History, Settings, LogOut, Menu, ChevronLeft, Zap } from "lucide-react"
+import { Home, BarChart2, History, Settings, LogOut, Menu, ChevronLeft, Zap, GitCompare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   // { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
+  { name: "Compare", href: "/dashboard/compare", icon: GitCompare },
   { name: "History", href: "/dashboard/history", icon: History },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]

@@ -11,7 +11,10 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "QuantHive Dashboard",
   description: "A modern, responsive financial dashboard",
-  generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.jpeg',
+  },
 }
 
 export default function RootLayout({
