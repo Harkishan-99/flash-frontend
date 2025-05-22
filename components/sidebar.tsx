@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
+  // { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
   { name: "History", href: "/dashboard/history", icon: History },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
