@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -12,11 +12,14 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle, Zap } from "lucide-react"
-import { PrivacyDialog } from "@/components/privacy-dialog"
-import { TermsDialog } from "@/components/terms-dialog"
+import { useAuth } from "@/contexts/auth-context"
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  username: z.string()
+    .min(3, { message: "Username must be at least 3 characters" })
+    .max(20, { message: "Username cannot exceed 20 characters" })
+    .regex(/^[a-zA-Z0-9_]+$/, { message: "Username can only contain letters, numbers, and underscores" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(8, { message: "Password must be at least 8 characters" }),
   confirmPassword: z.string(),
@@ -29,6 +32,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { register: registerUser, user , isAdmin, isAuthenticated} = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [success, setSuccess] = useState<boolean>(false)
@@ -41,11 +45,22 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: "",
+      username: "",
       email: "",
       password: "",
       confirmPassword: "",
     },
   })
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isAdmin) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [isAuthenticated, isAdmin, router]);
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true)
@@ -53,28 +68,26 @@ export default function RegisterPage() {
     setSuccess(false)
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        }),
+      const response = await registerUser({
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
       })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Registration failed")
-      }
-
-      // Registration successful
+      
       setSuccess(true)
+      
+      // Redirect based on user role after a short delay to show success message
+      setTimeout(() => {
+        if (response.user.role === 'admin') {
+          router.push('/admin/dashboard')
+        } else {
+          router.push('/dashboard')
+        }
+      }, 1500)
     } catch (err: any) {
-      setError(err.message || "An error occurred during registration")
+      console.error('Registration error:', err)
+      setError(err.response?.data?.message || "Registration failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -107,74 +120,85 @@ export default function RegisterPage() {
             </Alert>
           )}
 
-          {success ? (
+          {success && (
             <Alert className="bg-green-900 border-green-800 text-white mb-4">
               <CheckCircle className="h-4 w-4" />
               <AlertTitle>Registration Successful</AlertTitle>
               <AlertDescription>
-                Your account has been created and is pending approval. You will receive an 
-                email when your account is approved.
+                Your account has been created. Redirecting you to the dashboard...
               </AlertDescription>
             </Alert>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-white">
-                  Full Name
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="John Doe"
-                  {...register("name")}
-                  className="bg-gray-800 border-gray-700 text-white"
-                />
-                {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  {...register("email")}
-                  autoComplete="email"
-                  className="bg-gray-800 border-gray-700 text-white"
-                />
-                {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register("password")}
-                  autoComplete="new-password"
-                  className="bg-gray-800 border-gray-700 text-white"
-                />
-                {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-white">
-                  Confirm Password
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  {...register("confirmPassword")}
-                  autoComplete="new-password"
-                  className="bg-gray-800 border-gray-700 text-white"
-                />
-                {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
-              </div>
-              <Button type="submit" className="w-full bg-yellow-400 text-black hover:bg-yellow-500" disabled={isLoading}>
-                {isLoading ? "Creating Account..." : "Register"}
-              </Button>
-            </form>
           )}
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-white">
+                Full Name
+              </Label>
+              <Input
+                id="name"
+                placeholder="John Doe"
+                {...register("name")}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-white">
+                Username
+              </Label>
+              <Input
+                id="username"
+                placeholder="johndoe123"
+                {...register("username")}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+              {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@example.com"
+                {...register("email")}
+                autoComplete="email"
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                {...register("password")}
+                autoComplete="new-password"
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-white">
+                Confirm Password
+              </Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                {...register("confirmPassword")}
+                autoComplete="new-password"
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+              {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
+            </div>
+            <Button type="submit" className="w-full bg-yellow-400 text-black hover:bg-yellow-500" disabled={isLoading}>
+              {isLoading ? "Creating Account..." : "Register"}
+            </Button>
+          </form>
         </CardContent>
         <CardFooter className="flex flex-col">
           <div className="text-sm text-gray-400 mt-2">
@@ -185,23 +209,6 @@ export default function RegisterPage() {
           </div>
         </CardFooter>
       </Card>
-      
-      <footer className="mt-8 flex gap-4">
-        <TermsDialog 
-          trigger={
-            <button className="text-xs text-gray-400 hover:underline underline-offset-4">
-              Terms of Service
-            </button>
-          }
-        />
-        <PrivacyDialog 
-          trigger={
-            <button className="text-xs text-gray-400 hover:underline underline-offset-4">
-              Privacy
-            </button>
-          }
-        />
-      </footer>
     </div>
   )
-}
+} 

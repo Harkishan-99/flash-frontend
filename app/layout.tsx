@@ -3,7 +3,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { SettingsProvider } from "@/contexts/settings-context"
-import { AuthProvider } from "@/contexts/auth-provider"
+import { AuthProvider } from "@/contexts/auth-context"
 import type React from "react"
 
 const inter = Inter({ subsets: ["latin"] })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -14,6 +14,8 @@ import { MultiSelect } from "@/components/multi-select"
 import { BacktestResults } from "@/components/backtest-results"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Zap } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 
 const backtestSchema = z.object({
   name: z.string().min(1, { message: "Please enter a backtest name" }),
@@ -45,7 +47,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [backtestResults, setBacktestResults] = useState<any | null>(null)
-
+  const router = useRouter()
+  const { user , isAuthenticated} = useAuth()
   const {
     register,
     handleSubmit,
@@ -83,6 +86,14 @@ export default function DashboardPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    
+    if (!isAuthenticated) {
+      router.push('/login')
+    }
+    
+  }, [isAuthenticated])
 
   return (
     <div className="space-y-6">

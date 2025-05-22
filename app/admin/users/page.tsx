@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,70 +20,15 @@ type User = {
 };
 
 export default function AdminUsersPage() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
 
-  // Redirect if not admin
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated" && session?.user?.role !== "admin") {
-      router.push("/dashboard");
-    }
-  }, [status, session, router]);
 
-  // Fetch users
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.role === "admin") {
-      fetchUsers();
-    }
-  }, [status, session]);
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/admin/users");
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-      
-      const data = await response.json();
-      setUsers(data);
-    } catch (err: any) {
-      setError(err.message || "An error occurred while fetching users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateUserStatus = async (userId: string, status: string) => {
-    try {
-      setActionInProgress(userId);
-      const response = await fetch("/api/admin/users", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id: userId, status }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to update user status");
-      }
-      
-      // Refresh the user list
-      await fetchUsers();
-    } catch (err: any) {
-      setError(err.message || "An error occurred while updating user status");
-    } finally {
-      setActionInProgress(null);
-    }
-  };
+  
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -99,21 +43,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  if (status === "loading" || (status === "authenticated" && loading)) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (status === "authenticated" && session?.user?.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>You do not have permission to access this page.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto p-6">
@@ -167,7 +96,7 @@ export default function AdminUsersPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateUserStatus(user.id, "approved")}
+                            onClick={() => {}}
                             disabled={actionInProgress === user.id}
                             className="border-green-500 hover:bg-green-500 hover:text-white"
                           >
@@ -178,7 +107,7 @@ export default function AdminUsersPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateUserStatus(user.id, "rejected")}
+                            onClick={() => {}}
                             disabled={actionInProgress === user.id}
                             className="border-red-500 hover:bg-red-500 hover:text-white"
                           >

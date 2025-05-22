@@ -1,157 +1,162 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, AlertTriangle, CheckCircle } from "lucide-react";
-
-type UserStats = {
-  totalUsers: number;
-  pendingApprovals: number;
-  approvedUsers: number;
-  rejectedUsers: number;
-};
+import { useAuth } from "@/contexts/auth-context"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function AdminDashboardPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [stats, setStats] = useState<UserStats>({
-    totalUsers: 0,
-    pendingApprovals: 0,
-    approvedUsers: 0,
-    rejectedUsers: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth()
 
-  useEffect(() => {
-    console.log("Admin Dashboard - Session:", session);
-    
-    // Redirect if not admin
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated" && session?.user?.role !== "admin") {
-      console.log("Not admin, redirecting to dashboard");
-      router.push("/dashboard");
-    }
-  }, [status, session, router]);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch("/api/admin/users");
-        if (!response.ok) {
-          throw new Error("Failed to fetch user data");
-        }
-        
-        const users = await response.json();
-        
-        // Calculate stats
-        const totalUsers = users.length;
-        const pendingApprovals = users.filter((user: any) => user.status === "pending").length;
-        const approvedUsers = users.filter((user: any) => user.status === "approved").length;
-        const rejectedUsers = users.filter((user: any) => user.status === "rejected").length;
-        
-        setStats({
-          totalUsers,
-          pendingApprovals,
-          approvedUsers,
-          rejectedUsers,
-        });
-      } catch (error) {
-        console.error("Error fetching user stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (status === "authenticated" && session?.user?.role === "admin") {
-      fetchStats();
-    }
-  }, [status, session]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p>Loading...</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Registered accounts
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
-            <p className="text-xs text-muted-foreground">
-              Users awaiting approval
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved Users</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.approvedUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Active accounts
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rejected Users</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.rejectedUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Rejected accounts
-            </p>
-          </CardContent>
-        </Card>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
       </div>
-
-      {stats.pendingApprovals > 0 && (
-        <Card className="border-yellow-500/20">
-          <CardHeader>
-            <CardTitle>Action Required</CardTitle>
-            <CardDescription>There are pending registrations that need your attention</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">
-              You have {stats.pendingApprovals} user registration{stats.pendingApprovals !== 1 ? "s" : ""} waiting for approval.
-            </p>
-            <div className="mt-4">
-              <a 
-                href="/admin/users" 
-                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-yellow-500 text-black hover:bg-yellow-600 transition-colors"
-              >
-                Manage Users
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <p className="text-muted-foreground">
+        Welcome back, Admin {user?.name}!
+      </p>
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">345</div>
+                <p className="text-xs text-muted-foreground">
+                  +12% from last month
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Active Sessions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">53</div>
+                <p className="text-xs text-muted-foreground">
+                  +19% from last hour
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  New Registrations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">24</div>
+                <p className="text-xs text-muted-foreground">
+                  +6% from yesterday
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  System Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Operational</div>
+                <p className="text-xs text-muted-foreground">
+                  All systems running normally
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-4">
+              <CardHeader>
+                <CardTitle>Activity Overview</CardTitle>
+                <CardDescription>
+                  System activity for the last 30 days.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                {/* Add chart component here if needed */}
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-muted-foreground">Analytics data visualization goes here</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Recent Events</CardTitle>
+                <CardDescription>
+                  Latest system activities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="grid gap-1">
+                      <p className="text-sm font-medium">System update completed</p>
+                      <p className="text-xs text-muted-foreground">
+                        2 hours ago
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="grid gap-1">
+                      <p className="text-sm font-medium">New user registered</p>
+                      <p className="text-xs text-muted-foreground">
+                        4 hours ago
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="grid gap-1">
+                      <p className="text-sm font-medium">Database backup completed</p>
+                      <p className="text-xs text-muted-foreground">
+                        6 hours ago
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>
+                View and manage all registered users
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">User list will be displayed here</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Settings</CardTitle>
+              <CardDescription>
+                Configure system-wide settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Settings interface will be displayed here</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-  );
+  )
 } 
