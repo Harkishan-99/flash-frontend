@@ -3,7 +3,7 @@ import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { SettingsProvider } from "@/contexts/settings-context"
-import { AuthProvider } from "@/contexts/auth-provider"
+import { AuthProvider } from "@/contexts/auth-context"
 import type React from "react"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -11,7 +11,10 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "QuantHive Dashboard",
   description: "A modern, responsive financial dashboard",
-  generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.jpeg',
+  },
 }
 
 export default function RootLayout({

@@ -1,100 +1,54 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
-import { Users, LayoutDashboard, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
+import type React from "react";
+import { useEffect } from "react";
+import { Sidebar } from "@/components/sidebar";
+import { TopNav } from "@/components/top-nav";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { data: session, status } = useSession();
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const [loading, setLoading] = useState(true);
-
+  
+  // Enhanced client-side protection for admin routes
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated") {
-      if (session?.user?.role !== "admin") {
-        router.push("/dashboard");
-      } else {
-        setLoading(false);
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        // Not logged in, redirect to login
+        router.push('/login');
+      } else if (!isAdmin) {
+        // Logged in but not admin, redirect to dashboard
+        router.push('/dashboard');
       }
     }
-  }, [status, session, router]);
+  }, [isLoading, isAuthenticated, isAdmin, router]);
 
-  if (loading) {
+  // Show loading state while checking auth
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
     );
   }
-
-  const isActive = (path: string) => {
-    return pathname === path;
-  };
+  
+  // Don't render anything until we're sure user is authenticated and admin
+  if (!isAuthenticated || !isAdmin) {
+    return null;
+  }
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 border-r border-gray-700">
-        <div className="p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold">Admin Panel</h2>
-        </div>
-        <nav className="p-4 space-y-2">
-          <Link href="/admin/dashboard" passHref>
-            <Button
-              variant={isActive("/admin/dashboard") ? "default" : "ghost"}
-              className="w-full justify-start"
-            >
-              <LayoutDashboard className="h-5 w-5 mr-2" />
-              Dashboard
-            </Button>
-          </Link>
-          <Link href="/admin/users" passHref>
-            <Button
-              variant={isActive("/admin/users") ? "default" : "ghost"}
-              className="w-full justify-start"
-            >
-              <Users className="h-5 w-5 mr-2" />
-              Users
-            </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-900/20"
-            onClick={() => signOut({ callbackUrl: "/" })}
-          >
-            <LogOut className="h-5 w-5 mr-2" />
-            Sign Out
-          </Button>
-        </nav>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1">
-        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-          <h1 className="text-lg font-medium">
-            Admin {pathname.split("/").pop()?.charAt(0).toUpperCase() ?? ''}{pathname.split("/").pop()?.slice(1) ?? ''}
-          </h1>
-          <div className="flex items-center space-x-4">
-            <div>
-              <p className="text-sm text-gray-400">Logged in as</p>
-              <p className="text-sm font-medium">{session?.user?.email}</p>
-            </div>
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopNav />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6">
+          <div className="bg-primary/10 mb-4 p-4 rounded-lg">
+            <p className="text-sm font-medium">Admin Area - Restricted Access</p>
           </div>
-        </div>
-        <div className="p-6">
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -53,7 +53,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const handleSave = () => {
     setIsEditing(false)
     // Here you would typically send the updated profile to your backend
-    console.log("Saving profile:", userProfile)
+    
   }
 
   const handleRemoveCard = (index: number) => {

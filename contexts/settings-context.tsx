@@ -86,9 +86,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   })
 
   // Save settings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("userSettings", JSON.stringify(settings))
-  }, [settings])
+  // useEffect(() => {
+  //   localStorage.setItem("userSettings", JSON.stringify(settings))
+  // }, [settings])
 
   const updateSettings = (newSettings: Partial<UserSettings>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }))

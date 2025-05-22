@@ -38,15 +38,15 @@ export function ReportsTab() {
   const [selectedReport, setSelectedReport] = useState(reportTypes[0])
 
   const handleGenerateReport = () => {
-    console.log(`Generating ${selectedReport} report...`)
+    
   }
 
   const handleDownloadReport = () => {
-    console.log(`Downloading ${selectedReport} report...`)
+    
   }
 
   const handlePrintReport = () => {
-    console.log(`Printing ${selectedReport} report...`)
+    
   }
 
   return (

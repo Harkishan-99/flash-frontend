@@ -23,10 +23,10 @@ export default function Home() {
           </span>
         </nav>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4">
+          <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4 text-white">
             Login
           </Link>
-          <Link href="/register" className="text-sm font-medium hover:underline underline-offset-4">
+          <Link href="/register" className="text-sm font-medium hover:underline underline-offset-4 text-white">
             Register
           </Link>
         </nav>
