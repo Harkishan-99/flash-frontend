@@ -31,11 +31,13 @@ NEXT_PUBLIC_API_URL=https://api.quanthive.in
 
 ```bash
 # Install dependencies
-npm install
+npm install --legacy-peer-deps
 
 # Run development server
 npm run dev
 ```
+
+> **Note**: This project uses React 19, but some dependencies (like vaul) have peer dependencies that only support up to React 18. The `--legacy-peer-deps` flag is required to bypass these checks.
 
 ## Production Build
 
