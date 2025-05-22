@@ -46,7 +46,7 @@ export default function DashboardPage() {
           }
         } catch (err: any) {
           clearInterval(pollInterval)
-          console.error("Error polling backtest status:", err)
+          
           setError(err.response?.data?.detail || err.message || "Failed to get backtest status")
           setIsLoading(false)
         }
@@ -55,7 +55,7 @@ export default function DashboardPage() {
       // Cleanup interval on component unmount
       return () => clearInterval(pollInterval)
     } catch (err: any) {
-      console.error("Error handling backtest submission:", err)
+      
       setError(err.response?.data?.detail || err.message || "Failed to process backtest")
       setIsLoading(false)
     }

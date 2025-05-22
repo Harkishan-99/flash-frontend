@@ -19,6 +19,8 @@ This document provides comprehensive guidance on integrating with the Flash back
     - [Running a Backtest](#running-a-backtest)
     - [Getting Backtest Status](#getting-backtest-status)
     - [Getting Backtest Results](#getting-backtest-results)
+    - [Getting Trade Reports](#getting-trade-reports)
+    - [Getting Benchmark Returns](#getting-benchmark-returns)
     - [Downloading Backtest Reports](#downloading-backtest-reports)
     - [Debugging Backtests](#debugging-backtests)
     - [Getting User Backtests](#getting-user-backtests)
@@ -27,7 +29,7 @@ This document provides comprehensive guidance on integrating with the Flash back
     - [Getting Database Info](#getting-database-info)
     - [Getting Available Tickers](#getting-available-tickers)
     - [Verifying Database](#verifying-database)
-    - [Getting Benchmark Returns](#getting-benchmark-returns)
+    - [Getting Benchmark Returns](#getting-benchmark-returns-1)
   - [User Management](#user-management)
     - [Getting Current User](#getting-current-user)
     - [Listing Users (Admin Only)](#listing-users-admin-only)
@@ -241,6 +243,7 @@ Authorization: Bearer <token>
 **Request Body:**
 ```json
 {
+  "name": "string",
   "prompt": "string",
   "tickers": ["string"],
   "initial_cash": "number",
@@ -259,6 +262,7 @@ const response = await fetch('/api/backtest/run', {
     'Authorization': `Bearer ${token}`
   },
   body: JSON.stringify({
+    name: "AAPL Moving Average Strategy",
     prompt: "Create a strategy that buys AAPL when the 50-day moving average crosses above the 200-day moving average and sells when it crosses below.",
     tickers: ["AAPL"],
     initial_cash: 100000,
@@ -273,6 +277,7 @@ const response = await fetch('/api/backtest/run', {
 ```json
 {
   "backtest_id": "string",
+  "name": "string",
   "status": "string",
   "message": "string"
 }
@@ -282,6 +287,7 @@ const response = await fetch('/api/backtest/run', {
 ```json
 {
   "backtest_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "AAPL Moving Average Strategy",
   "status": "pending",
   "message": "Backtest queued for execution"
 }
@@ -304,8 +310,10 @@ Authorization: Bearer <token>
 ```json
 {
   "backtest_id": "string",
+  "name": "string",
   "status": "string",
-  "message": "string"
+  "message": "string",
+  "created_at": "datetime"
 }
 ```
 
@@ -313,8 +321,10 @@ Authorization: Bearer <token>
 ```json
 {
   "backtest_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "AAPL Moving Average Strategy",
   "status": "completed",
-  "message": "Backtest completed successfully"
+  "message": "Backtest completed successfully",
+  "created_at": "2023-05-15T14:30:25.123Z"
 }
 ```
 
@@ -342,6 +352,7 @@ Authorization: Bearer <token>
 ```json
 {
   "backtest_id": "string",
+  "name": "string",
   "metrics": {
     "total_return": "number",
     "annual_return": "number",
@@ -350,14 +361,143 @@ Authorization: Bearer <token>
     "sortino": "number",
     "max_drawdown": "number",
     "win_rate": "number",
-    "beta": "number",
     "alpha": "number",
+    "beta": "number",
     "additional_metrics": "..."
   },
   "insights": "string",
   "improvements": "string",
   "strategy_code": "string"
 }
+```
+
+**Example Response:**
+```json
+{
+  "backtest_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "AAPL Moving Average Strategy",
+  "metrics": {
+    "total_return": 32.54,
+    "annual_return": 12.76,
+    "volatility": 18.42,
+    "sharpe": 0.68,
+    "sortino": 0.91,
+    "max_drawdown": -15.23,
+    "win_rate": 58.65,
+    "alpha": 5.21,
+    "beta": 0.78,
+    "trades": 37,
+    "initial_value": 100000,
+    "final_value": 132540
+  },
+  "insights": "The strategy performs well in trending markets...",
+  "improvements": "Consider adding a volatility filter to reduce drawdowns...",
+  "strategy_code": "def initialize(context):\n    context.asset = symbol('AAPL')\n..."
+}
+```
+
+**Metrics Explanation:**
+- `total_return`: Total percentage return over the entire period
+- `annual_return`: Annualized percentage return
+- `volatility`: Annualized standard deviation of returns
+- `sharpe`: Sharpe ratio (risk-adjusted return)
+- `sortino`: Sortino ratio (downside risk-adjusted return)
+- `max_drawdown`: Maximum percentage loss from peak to trough
+- `win_rate`: Percentage of winning trades
+- `alpha`: Jensen's alpha, excess return of the strategy relative to the benchmark after adjusting for beta
+- `beta`: Beta coefficient, measure of the strategy's volatility relative to the market benchmark
+- `trades`: Total number of trades executed
+- `initial_value`: Initial portfolio value
+- `final_value`: Final portfolio value
+
+**Potential Errors:**
+- `400 Bad Request`: Backtest not completed
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: User doesn't own this backtest
+- `404 Not Found`: Backtest not found
+
+### Getting Trade Reports
+
+**Endpoint:** `GET /api/backtest/trades/{backtest_id}`
+
+**Request Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response Schema:**
+```json
+[
+  {
+    "id": "integer",
+    "ticker": "string",
+    "entry_date": "datetime",
+    "exit_date": "datetime",
+    "trade_type": "string",
+    "entry_price": "number",
+    "exit_price": "number",
+    "position_size": "number",
+    "pnl": "number",
+    "returns_percentage": "number"
+  }
+]
+```
+
+**Example Response:**
+```json
+[
+  {
+    "id": 1,
+    "ticker": "AAPL",
+    "entry_date": "2022-01-05T00:00:00",
+    "exit_date": "2022-02-10T00:00:00",
+    "trade_type": "LONG",
+    "entry_price": 175.23,
+    "exit_price": 168.88,
+    "position_size": 50.0,
+    "pnl": -317.50,
+    "returns_percentage": -3.62
+  }
+]
+```
+
+**Potential Errors:**
+- `400 Bad Request`: Backtest not completed
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: User doesn't own this backtest
+- `404 Not Found`: Backtest not found
+
+### Getting Benchmark Returns
+
+**Endpoint:** `GET /api/backtest/returns/{backtest_id}`
+
+**Request Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response Schema:**
+```json
+[
+  {
+    "id": "integer",
+    "date": "datetime",
+    "strategy_return": "number",
+    "benchmark_return": "number"
+  }
+]
+```
+
+**Example Response:**
+```json
+[
+  {
+    "id": 1,
+    "date": "2022-01-05T00:00:00",
+    "strategy_return": 0.0023,
+    "benchmark_return": 0.0018
+  }
+]
 ```
 
 **Potential Errors:**
@@ -434,8 +574,10 @@ Authorization: Bearer <token>
 [
   {
     "backtest_id": "string",
+    "name": "string",
     "status": "string",
-    "message": "string"
+    "message": "string",
+    "created_at": "datetime"
   }
 ]
 ```
@@ -445,13 +587,17 @@ Authorization: Bearer <token>
 [
   {
     "backtest_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "AAPL Moving Average Strategy",
     "status": "completed",
-    "message": "Backtest completed successfully"
+    "message": "Backtest completed successfully",
+    "created_at": "2023-05-15T14:30:25.123Z"
   },
   {
     "backtest_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "name": "MSFT RSI Strategy",
     "status": "running",
-    "message": "Running backtest..."
+    "message": "Running backtest...",
+    "created_at": "2023-05-15T14:30:25.123Z"
   }
 ]
 ```

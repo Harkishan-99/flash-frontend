@@ -39,7 +39,7 @@ export function AccountsOverview() {
   }
 
   const handleRequestMoney = (amount, contact) => {
-    console.log(`Requested $${amount} from ${contact.name}`)
+    
   }
 
   return (

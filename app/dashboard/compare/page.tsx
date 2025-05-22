@@ -48,7 +48,7 @@ export default function ComparePage() {
       const completedBacktests = response.filter(backtest => backtest.status === 'completed')
       setBacktests(completedBacktests)
     } catch (err: any) {
-      console.error("Error fetching backtests:", err)
+      
       setError(err.response?.data?.detail || err.message || "Failed to fetch backtests")
     } finally {
       setLoading(false)

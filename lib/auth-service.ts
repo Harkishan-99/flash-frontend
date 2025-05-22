@@ -29,7 +29,7 @@ export interface UserDetails {
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await axios.post<AuthResponse>('/auth/token', credentials, {
+    const response = await axios.post<AuthResponse>('/api/auth/token', credentials, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
@@ -49,7 +49,7 @@ export const authService = {
   },
   
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await axios.post<AuthResponse>('/auth/register', data);
+    const response = await axios.post<AuthResponse>('/api/auth/register', data);
     
     // Store the token in localStorage
     if (response.data.access_token) {
@@ -61,7 +61,7 @@ export const authService = {
   },
 
   async getUserDetails(): Promise<UserDetails> {
-    const response = await axios.get<UserDetails>('/auth/me');
+    const response = await axios.get<UserDetails>('/api/auth/me');
     return response.data;
   },
   

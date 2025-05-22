@@ -41,7 +41,7 @@ export function BacktestComparison({ backtestIds }: BacktestComparisonProps) {
           setResults(prev => ({ ...prev, [id]: backtestResults }))
           setLoading(prev => ({ ...prev, [id]: false }))
         } catch (err: any) {
-          console.error(`Error fetching results for backtest ${id}:`, err)
+          
           setErrors(prev => ({ 
             ...prev, 
             [id]: err.response?.data?.detail || err.message || `Failed to fetch results for backtest ${id}`

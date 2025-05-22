@@ -11,12 +11,15 @@ import { BacktestStatus, backtestService } from "@/lib/backtest-service"
 import { useAuth } from "@/contexts/auth-context"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
 
 export default function HistoryPage() {
   const [backtests, setBacktests] = useState<BacktestStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [runningBacktests, setRunningBacktests] = useState<Set<string>>(new Set())
+  const [progressValues, setProgressValues] = useState<Record<string, number>>({})
   const router = useRouter()
   const { isAuthenticated } = useAuth()
 
@@ -26,6 +29,22 @@ export default function HistoryPage() {
       setError(null)
       const response = await backtestService.getUserBacktests()
       setBacktests(response)
+      
+      // Track running backtests
+      const running = new Set<string>()
+      response.forEach(backtest => {
+        if (backtest.status === 'running' || backtest.status === 'pending') {
+          running.add(backtest.backtest_id)
+          // Initialize progress for new running backtests
+          if (!progressValues[backtest.backtest_id]) {
+            setProgressValues(prev => ({
+              ...prev,
+              [backtest.backtest_id]: 0
+            }))
+          }
+        }
+      })
+      setRunningBacktests(running)
     } catch (err: any) {
       console.error("Error fetching backtests:", err)
       setError(err.response?.data?.detail || err.message || "Failed to fetch backtests")
@@ -34,11 +53,62 @@ export default function HistoryPage() {
     }
   }
 
+  // Initial fetch
   useEffect(() => {
     if (isAuthenticated) {
       fetchBacktests()
     }
   }, [isAuthenticated])
+
+  // Poll for updates on running backtests
+  useEffect(() => {
+    if (runningBacktests.size === 0) return
+
+    const pollInterval = setInterval(async () => {
+      try {
+        // Only poll if there are running backtests
+        if (runningBacktests.size > 0) {
+          // Get fresh status
+          const response = await backtestService.getUserBacktests()
+          
+          // Update progresses
+          const newProgressValues = { ...progressValues }
+          let changed = false
+          
+          response.forEach(backtest => {
+            if (runningBacktests.has(backtest.backtest_id)) {
+              // If status changed, update it
+              if (backtest.status !== 'running' && backtest.status !== 'pending') {
+                runningBacktests.delete(backtest.backtest_id)
+                changed = true
+              } else {
+                // Simulate progress advancement for running backtests
+                newProgressValues[backtest.backtest_id] = Math.min(
+                  newProgressValues[backtest.backtest_id] + Math.random() * 5,
+                  95 // Cap at 95% until actually complete
+                )
+                changed = true
+              }
+            }
+          })
+          
+          if (changed) {
+            setProgressValues(newProgressValues)
+            setRunningBacktests(new Set(runningBacktests))
+            
+            // If all are done, update the full list
+            if (runningBacktests.size === 0) {
+              setBacktests(response)
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error polling backtest status:", error)
+      }
+    }, 2000)
+
+    return () => clearInterval(pollInterval)
+  }, [runningBacktests, progressValues])
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this backtest?")) {
@@ -54,12 +124,10 @@ export default function HistoryPage() {
   }
 
   const handleViewResults = (id: string) => {
-    // In a real app, navigate to results page
     router.push(`/dashboard/backtest/${id}`)
   }
 
   const handleCompare = (id: string) => {
-    // Navigate to compare page with this backtest pre-selected
     router.push(`/dashboard/compare?ids=${id}`)
   }
 
@@ -67,11 +135,19 @@ export default function HistoryPage() {
     window.open(backtestService.getBacktestReportUrl(id, format), '_blank')
   }
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A"
+    
+    const date = new Date(dateString)
+    return date.toLocaleString()
+  }
+
   const filteredBacktests = backtests.filter(backtest => 
-    backtest.backtest_id.toLowerCase().includes(searchTerm.toLowerCase())
+    (backtest.backtest_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (backtest.name && backtest.name.toLowerCase().includes(searchTerm.toLowerCase())))
   )
 
-  if (loading) {
+  if (loading && backtests.length === 0) {
     return (
       <div className="container mx-auto p-6 space-y-8">
         <h1 className="text-3xl font-bold tracking-tight">Backtest History</h1>
@@ -140,7 +216,8 @@ export default function HistoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Backtest ID</TableHead>
+                      <TableHead>Backtest Name</TableHead>
+                      <TableHead>Created At</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Message</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -149,16 +226,25 @@ export default function HistoryPage() {
                   <TableBody>
                     {filteredBacktests.map((backtest) => (
                       <TableRow key={backtest.backtest_id}>
-                        <TableCell className="font-medium">{backtest.backtest_id}</TableCell>
+                        <TableCell className="font-medium">{backtest.name || backtest.backtest_id}</TableCell>
+                        <TableCell>{formatDate(backtest.created_at)}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${backtest.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                            backtest.status === 'failed' ? 'bg-red-100 text-red-800' : 
-                            backtest.status === 'running' ? 'bg-blue-100 text-blue-800' : 
-                            'bg-gray-100 text-gray-800'}`}
-                          >
-                            {backtest.status}
-                          </span>
+                          {(backtest.status === 'running' || backtest.status === 'pending') ? (
+                            <div className="space-y-2 w-24">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {backtest.status}
+                              </span>
+                              <Progress value={progressValues[backtest.backtest_id] || 0} className="h-2" />
+                            </div>
+                          ) : (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                              ${backtest.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                              backtest.status === 'failed' ? 'bg-red-100 text-red-800' : 
+                              'bg-gray-100 text-gray-800'}`}
+                            >
+                              {backtest.status}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">{backtest.message}</TableCell>
                         <TableCell className="text-right">

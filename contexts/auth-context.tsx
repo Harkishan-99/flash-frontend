@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             userData = JSON.parse(userJson);
           } catch (e) {
-            console.error('Error parsing user data from localStorage', e);
+            
           }
         }
         
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               localStorage.setItem('user', JSON.stringify(userData));
             }
           } catch (error) {
-            console.error('Failed to fetch user details', error);
+            
             // Token might be invalid, clear it
             authService.logout();
           }
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         setUser(userData);
       } catch (error) {
-        console.error('Failed to initialize auth state', error);
+        
       } finally {
         setIsLoading(false);
       }
